@@ -1,96 +1,132 @@
-// Barath Tirumala
+//Barath Tirumala
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.PrintWriter;
 import java.util.*;
 
+
+
 public class bigtruck {
-    public static void main(String[] args) {
-        Scanner stdin = new Scanner(System.in);
-        int numLoc = stdin.nextInt();
+    public static void main (String[] t) throws IOException {
 
-        int[] location = new int[numLoc];
-        int[][] m = new int[numLoc][numLoc];
-        int[][] path = new int[numLoc][numLoc];
+        INPUT in = new INPUT (System.in);
+        PrintWriter out = new PrintWriter (System.out);
 
+        int N = in.iscan ();
+        int[] arr = new int[N];
 
-        for(int i = 0; i <numLoc; i++){
-            location[i] = stdin.nextInt();
-        }
-        int numRoads = stdin.nextInt();
+        for (int n = 0; n < N; ++n)
+            arr[n] = in.iscan ();
 
-        for (int a = 0; a < numLoc; a++)
-            for (int b = 0; b < numLoc; b++)
-                m[a][b] = 1000000;
-        for(int k = 0; k<numRoads; k++){
-            int t1 = stdin.nextInt();
-            int t2 = stdin.nextInt();
-            t1--; t2--;
-            m[t1][t2] = stdin.nextInt();
-        }
+        int M = in.iscan ();
+        List<Edge>[] list = new ArrayList[N];
 
+        for (int n = 0; n < N; ++n)
+            list[n] = new ArrayList<Edge> ();
 
-        for (int a = 0; a < numLoc; a++)
-            for (int b = 0; b < numLoc; b++)
-                if (m[a][b] == 1000000)
-                    path[a][b] = -1;
-                else
-                    path[a][b] = a;
+        for (int m = 0, a, b, d; m < M; ++m) {
+            a = in.iscan () - 1;
+            b = in.iscan () - 1;
+            d = in.iscan ();
+            list[a].add (new Edge (b, d));
+            list[b].add (new Edge (a, d));
 
-        for (int i=0; i<numLoc; i++)
-            path[i][i] = i;
-
-        int[][] shortpath = shortestpath(m, path, location);
-
-        for (int i=0; i<numLoc;i++) {
-            for (int j=0; j<numLoc;j++)
-                System.out.print(shortpath[i][j]+" ");
-            System.out.println();
         }
 
-        numLoc--;
-        String myPath = numLoc + "";
+        State[] dp = new State[N];
 
-        // Just add start to our string and print.
-        myPath = numLoc + " -> " + myPath;
-        //System.out.println("Here's the path "+myPath);
-    }
+        for (int n = 0; n < N; ++n)
+            dp[n] = new State (1 << 20, arr[n]);
 
-    public static int[][] shortestpath(int[][] adj, int[][] path, int[] loc) {
+        dp[0].d = 0;
+        Queue<Integer> q = new ArrayDeque<Integer> ();
+        int curr = 0;
 
-        int n = adj.length;
-        int[][] ans = new int[n][n];
-        int sum = 0;
-        sum += loc[0];
+        q.offer (curr);
+        while (!q.isEmpty ()) {
+            curr = q.poll ();
 
-        // Implement algorithm on a copy matrix so that the adjacency isn't destroyed.
-        copy(ans, adj);
-
-        // Compute successively better paths through vertex k.
-        for (int k=0; k<n;k++) {
-
-            // Do so between each possible pair of points.
-            for (int i=0; i<n; i++) {
-                for (int j=0; j<n;j++) {
-
-                    // It's better to go through k as a intermediate vertex.
-                    if (ans[i][k]+ans[k][j] < ans[i][j]) {
-                        ans[i][j] = ans[i][k]+ans[k][j];
-                        sum+=loc[j--];
-                        path[i][j] = path[k][j];
-                    }
+            for (Edge e : list[curr]) {
+                if (dp[e.E].d > dp[curr].d + e.W || dp[e.E].d == dp[curr].d + e.W && dp[e.E].i < dp[curr].i + arr[e.E]) {
+                    dp[e.E] = new State (dp[curr].d + e.W, dp[curr].i + arr[e.E]);
+                    q.offer (e.E);
                 }
             }
         }
 
-        System.out.println(sum);
-        // Return the shortest path matrix.
-        return ans;
+        out.print (dp[N - 1].d == 1 << 20 ? "impossible" : dp[N - 1].d + " " + dp[N - 1].i);
+        out.close ();
+
     }
 
-    public static void copy(int[][] a, int[][] b) {
-        for (int i=0;i<a.length;i++)
-            for (int j=0;j<a[0].length;j++)
-                a[i][j] = b[i][j];
+
+
+    private static class State {
+        int d, i;
+
+        public State (int d, int i) {
+            this.d = d;
+            this.i = i;
+        }
     }
 
+    private static class Edge {
+        int E, W;
+
+        public Edge (int E, int W) {
+            this.E = E;
+            this.W = W;
+        }
+    }
+
+
+
+    private static class INPUT {
+        private InputStream stream;
+        private byte[] buf = new byte[1024];
+        private int curChar, numChars;
+
+        public INPUT (InputStream stream) {
+            this.stream = stream;
+        }
+
+        public int cscan () throws IOException {
+            if (curChar >= numChars) {
+                curChar = 0;
+                numChars = stream.read (buf);
+            }
+            return buf[curChar++];
+        }
+
+
+
+        public int iscan () throws IOException {
+            int c = cscan (), sgn = 1;
+            while (space (c)) c = cscan ();
+
+            if (c == '-') {
+                sgn = -1;
+                c = cscan ();
+            }
+
+            int res = 0;
+
+            do {
+                res = (res << 1) + (res << 3);
+                res += c - '0';
+
+                c = cscan ();
+            }
+
+            while (!space (c));
+            return res * sgn;
+        }
+
+
+
+        public boolean space (int c) {
+            return c == ' ' || c == '\n' || c == '\r' || c == '\t' || c == -1;
+        }
+    }
 }
-
