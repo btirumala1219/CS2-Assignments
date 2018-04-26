@@ -2,4 +2,5 @@
 Collection of programming assignments for COP 3503
 
 - All made with intellij Idea
-- CDA project
+
+FNALIZED FOR YEAR
